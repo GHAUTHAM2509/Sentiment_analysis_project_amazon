@@ -1,26 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Movie Review Rating</title>
-    <script>
-        function submitReview() {
-            var review = document.getElementById("review").value;
-            fetch("/", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: "review=" + encodeURIComponent(review)
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("result").innerText = "Predicted Rating: " + data.rating;
-            });
-        }
-    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Prediction</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1>Amazon Product Review Rating Predictor</h1>
-    <textarea id="review" rows="4" cols="50"></textarea><br>
-    <button onclick="submitReview()">Submit</button>
-    <p id="result"></p>
+    <h1>Enter Your Review</h1>
+    <textarea id="reviewInput" rows="4" cols="50"></textarea>
+    <br>
+    <button id="predictButton">Predict</button>
+    <h2>Prediction: <span id="predictionResult">-</span></h2>
+
+    <script>
+        $(document).ready(function() {
+            $("#predictButton").click(function() {
+                let review = $("#reviewInput").val();
+                $.ajax({
+                    url: "/predict",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ review: review }),
+                    success: function(response) {
+                        $("#predictionResult").text(response.prediction);
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

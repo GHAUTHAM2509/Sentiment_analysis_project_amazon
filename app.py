@@ -26,13 +26,17 @@ def predict_rating(review):
     
     return int(np.ceil(prediction / 3))
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        review = request.form['review']
-        rating = predict_rating(review)
-        return jsonify({'rating': rating})
-    return render_template('index.html')
 
-if __name__ == '__main__':
+@app.route('/')
+def home():
+    return render_template('index.html')  # Load HTML page
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.json  # Get JSON data from AJAX request
+    review = data['review']  # Extract text input
+    prediction = predict_rating(review)  # Make prediction
+    return jsonify({'prediction': prediction})  # Return JSON response
+
+if __name__ == "__main__":
     app.run(debug=True)
