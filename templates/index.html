@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Review Rating</title>
+    <script>
+        function submitReview() {
+            var review = document.getElementById("review").value;
+            fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: "review=" + encodeURIComponent(review)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("result").innerText = "Predicted Rating: " + data.rating;
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Amazon Product Review Rating Predictor</h1>
+    <textarea id="review" rows="4" cols="50"></textarea><br>
+    <button onclick="submitReview()">Submit</button>
+    <p id="result"></p>
+</body>
+</html>
