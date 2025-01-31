@@ -31,7 +31,7 @@
         $(document).ready(function() {
             $("#predictButton").click(function() {
                 let review = $("#reviewInput").val();
-                if (review.length < 50 || review.length > 200) {
+                if (review.length < 50 || review.length > 20000) {
                     $("#predictionResult").text("Review must be between 50 and 200 characters.");
                     return;
                 }
