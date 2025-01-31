@@ -20,6 +20,7 @@ def classify(feature_matrix, theta, theta_0):
         should be considered a positive classification.
     """
     # Your code here
+    return (feature_matrix @ theta + theta_0 > 1e-7) * 2.0 - 1 
     return (feature_matrix @ theta + theta_0 )
     raise NotImplementedError
 
@@ -106,7 +107,7 @@ def extract_bow_feature_vectors(reviews, indices_by_word, binarize=True):
 
 def classify_star_rating(Feature_matrix, theta, theta_0, flag):
     prediction = classify(Feature_matrix, theta, theta_0)
-    
+    return (prediction)
     if flag == 1:
         if prediction < -20:
             return 1

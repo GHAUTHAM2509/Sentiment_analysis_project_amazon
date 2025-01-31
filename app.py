@@ -24,7 +24,10 @@ def predict_rating(review):
         # Predict rating
         prediction += p1.classify_star_rating(review_features, theta, theta_0, i)
     
-    return int(np.ceil(prediction / 3))
+    if prediction > 0:
+        return "positive"
+    else:
+        return "negative"
 
 
 @app.route('/')
