@@ -22,7 +22,7 @@ def predict_rating(review):
         review_features = p1.extract_bow_feature_vectors([review], dictionary)
         
         # Predict rating
-        prediction += p1.classify_star_rating(review_features, theta, theta_0, i)
+        prediction += p1.classify_star_rating(review_features, theta, theta_0)
     
     if prediction > 0:
         return "positive"

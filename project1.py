@@ -105,40 +105,7 @@ def extract_bow_feature_vectors(reviews, indices_by_word, binarize=True):
         
     return feature_matrix
 
-def classify_star_rating(Feature_matrix, theta, theta_0, flag):
+def classify_star_rating(Feature_matrix, theta, theta_0):
     prediction = classify(Feature_matrix, theta, theta_0)
     return (prediction)
-    if flag == 1:
-        if prediction < -20:
-            return 1
-        elif prediction < 0:
-            return 2
-        elif prediction < 10:
-            return 3
-        elif prediction < 20:
-            return 4
-        else:
-            return 5
-    if flag == 2:
-        if prediction < -50:
-            return 1
-        elif prediction < 0:
-            return 2
-        elif prediction < 20:
-            return 3
-        elif prediction < 40:
-            return 4
-        else:
-            return 5
-    if flag == 3:
-        if prediction < -1:
-            return 1
-        elif prediction < 0:
-            return 2
-        elif prediction < 0.50:
-            return 3
-        elif prediction < 1:
-            return 4
-        else:
-            return 5
     

@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Prediction</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        #loadingState {
+            display: none;
+            font-size: 14px;
+            color: blue;
+        }
+        #errorState {
+            display: none;
+            font-size: 14px;
+            color: red;
+        }
+    </style>
 </head>
 <body>
     <h1>Enter Your Review</h1>
@@ -12,11 +24,21 @@
     <br>
     <button id="predictButton">Predict</button>
     <h2>Prediction: <span id="predictionResult">-</span></h2>
+    <div id="loadingState">Loading...</div>
+    <div id="errorState">An error occurred. Please try again.</div>
 
     <script>
         $(document).ready(function() {
             $("#predictButton").click(function() {
                 let review = $("#reviewInput").val();
+                if (review.length < 50 || review.length > 200) {
+                    $("#predictionResult").text("Review must be between 50 and 200 characters.");
+                    return;
+                }
+
+                $("#loadingState").show();
+                $("#errorState").hide();
+
                 $.ajax({
                     url: "/predict",
                     type: "POST",
@@ -24,6 +46,12 @@
                     data: JSON.stringify({ review: review }),
                     success: function(response) {
                         $("#predictionResult").text(response.prediction);
+                    },
+                    error: function() {
+                        $("#errorState").show();
+                    },
+                    complete: function() {
+                        $("#loadingState").hide();
                     }
                 });
             });
