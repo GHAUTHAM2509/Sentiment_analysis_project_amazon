@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block additional_styles %}
+.container {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.upload-section {
+    text-align: center;
+    padding: 2rem;
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    transition: border-color 0.3s ease;
+}
+
+.upload-section:hover {
+    border-color: #007bff;
+}
+
+.upload-section.dragover {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.upload-button:hover {
+    background-color: #0056b3;
+}
+
+.file-name {
+    margin-top: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+#loadingState {
+    display: none;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#errorState {
+    display: none;
+    background-color: #fce8e6;
+    color: #d93025;
+    padding: 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.results-section {
+    display: none;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0.5rem 0;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.positive {
+    color: #1e7e34;
+}
+
+.negative {
+    color: #d93025;
+}
+
+.total {
+    color: #007bff;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>CSV Review Analysis</h1>
+    <div class="upload-section" id="dropZone">
+        <input type="file" id="fileInput" class="file-input" accept=".csv">
+        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+            Choose CSV File
+        </button>
+        <div class="file-name" id="fileName">No file chosen</div>
+        <p style="color: #666; margin-top: 1rem;">Drag and drop your CSV file here or click to browse</p>
+        <p style="color: #666; font-size: 0.9rem;">The CSV should have a column named 'review' containing the review text</p>
+    </div>
+    
+    <div id="loadingState">
+        <div class="spinner"></div>
+        <p>Analyzing reviews...</p>
+    </div>
+    
+    <div id="errorState">An error occurred. Please try again.</div>
+    
+    <div class="results-section" id="resultsSection">
+        <h2 style="text-align: center; margin-bottom: 1rem;">Analysis Results</h2>
+        <div class="results-grid">
+            <div class="stat-card">
+                <div class="stat-value positive" id="positiveCount">0</div>
+                <div class="stat-label">Positive Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value negative" id="negativeCount">0</div>
+                <div class="stat-label">Negative Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value total" id="totalCount">0</div>
+                <div class="stat-label">Total Reviews</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        const dropZone = $('#dropZone');
+        const fileInput = $('#fileInput');
+        const fileName = $('#fileName');
+        const resultsSection = $('#resultsSection');
+        
+        // Drag and drop handlers
+        dropZone.on('dragover', function(e) {
+            e.preventDefault();
+            dropZone.addClass('dragover');
+        });
+        
+        dropZone.on('dragleave', function() {
+            dropZone.removeClass('dragover');
+        });
+        
+        dropZone.on('drop', function(e) {
+            e.preventDefault();
+            dropZone.removeClass('dragover');
+            const files = e.originalEvent.dataTransfer.files;
+            if (files.length) {
+                fileInput[0].files = files;
+                handleFile(files[0]);
+            }
+        });
+        
+        fileInput.on('change', function() {
+            if (this.files.length) {
+                handleFile(this.files[0]);
+            }
+        });
+        
+        function handleFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                $('#errorState').text('Please upload a CSV file').show();
+                return;
+            }
+            
+            fileName.text(file.name);
+            $('#errorState').hide();
+            $('#loadingState').show();
+            resultsSection.hide();
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            $.ajax({
+                url: '/analyze-csv',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#positiveCount').text(response.positive_count);
+                    $('#negativeCount').text(response.negative_count);
+                    $('#totalCount').text(response.total_reviews);
+                    resultsSection.show();
+                },
+                error: function(xhr) {
+                    $('#errorState').text(xhr.responseJSON?.error || 'An error occurred. Please try again.').show();
+                },
+                complete: function() {
+                    $('#loadingState').hide();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

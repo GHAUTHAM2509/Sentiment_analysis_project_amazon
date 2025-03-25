@@ -1,61 +1,199 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Prediction</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-        #loadingState {
-            display: none;
-            font-size: 14px;
-            color: blue;
-        }
-        #errorState {
-            display: none;
-            font-size: 14px;
-            color: red;
-        }
-    </style>
-</head>
-<body>
-    <h1>Enter Your Review</h1>
-    <textarea id="reviewInput" rows="4" cols="50"></textarea>
-    <br>
-    <button id="predictButton">Predict</button>
-    <h2>Prediction: <span id="predictionResult">-</span></h2>
-    <div id="loadingState">Loading...</div>
+{% extends "base.html" %}
+
+{% block additional_styles %}
+.container {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+}
+
+textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 120px;
+    transition: border-color 0.3s ease;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.result-container {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.result-label {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.result-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.positive {
+    background-color: #e6f4ea;
+    color: #1e7e34;
+}
+
+.negative {
+    background-color: #fce8e6;
+    color: #d93025;
+}
+
+#loadingState {
+    display: none;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#errorState {
+    display: none;
+    background-color: #fce8e6;
+    color: #d93025;
+    padding: 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.char-count {
+    text-align: right;
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Single Review Analysis</h1>
+    <div class="input-group">
+        <textarea id="reviewInput" placeholder="Enter your review here (50-20000 characters)"></textarea>
+        <div class="char-count">Characters: <span id="charCount">0</span>/20000</div>
+    </div>
+    <div class="button-container">
+        <button id="predictButton">Analyze Sentiment</button>
+    </div>
+    <div id="loadingState">
+        <div class="spinner"></div>
+        <p>Analyzing your review...</p>
+    </div>
     <div id="errorState">An error occurred. Please try again.</div>
+    <div class="result-container">
+        <div class="result-label">Sentiment Analysis Result:</div>
+        <div id="predictionResult" class="result-value">-</div>
+    </div>
+</div>
+{% endblock %}
 
-    <script>
-        $(document).ready(function() {
-            $("#predictButton").click(function() {
-                let review = $("#reviewInput").val();
-                if (review.length < 50 || review.length > 20000) {
-                    $("#predictionResult").text("Review must be between 50 and 200 characters.");
-                    return;
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Character counter
+        $("#reviewInput").on('input', function() {
+            const count = $(this).val().length;
+            $("#charCount").text(count);
+        });
+
+        $("#predictButton").click(function() {
+            let review = $("#reviewInput").val();
+            if (review.length < 50 || review.length > 20000) {
+                $("#predictionResult").text("Review must be between 50 and 20000 characters");
+                $("#predictionResult").removeClass("positive negative").addClass("negative");
+                return;
+            }
+
+            $("#loadingState").show();
+            $("#errorState").hide();
+            $("#predictionResult").text("-").removeClass("positive negative");
+
+            $.ajax({
+                url: "/predict",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ review: review }),
+                success: function(response) {
+                    const prediction = response.prediction;
+                    $("#predictionResult")
+                        .text(prediction.charAt(0).toUpperCase() + prediction.slice(1))
+                        .removeClass("positive negative")
+                        .addClass(prediction === "positive" ? "positive" : "negative");
+                },
+                error: function() {
+                    $("#errorState").show();
+                },
+                complete: function() {
+                    $("#loadingState").hide();
                 }
-
-                $("#loadingState").show();
-                $("#errorState").hide();
-
-                $.ajax({
-                    url: "/predict",
-                    type: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({ review: review }),
-                    success: function(response) {
-                        $("#predictionResult").text(response.prediction);
-                    },
-                    error: function() {
-                        $("#errorState").show();
-                    },
-                    complete: function() {
-                        $("#loadingState").hide();
-                    }
-                });
             });
         });
-    </script>
-</body>
-</html>
+    });
+</script>
+{% endblock %}

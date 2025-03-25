@@ -2,6 +2,8 @@ from flask import Flask, request, render_template, jsonify
 import joblib
 import numpy as np
 import project1 as p1
+import pandas as pd
+import io
 
 app = Flask(__name__)
 
@@ -29,17 +31,60 @@ def predict_rating(review):
     else:
         return "negative"
 
-
 @app.route('/')
 def home():
-    return render_template('index.html')  # Load HTML page
+    return render_template('index.html')
+
+@app.route('/csv-analysis')
+def csv_analysis():
+    return render_template('csv_analysis.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    data = request.json  # Get JSON data from AJAX request
-    review = data['review']  # Extract text input
-    prediction = predict_rating(review)  # Make prediction
-    return jsonify({'prediction': prediction})  # Return JSON response
+    data = request.json
+    review = data['review']
+    prediction = predict_rating(review)
+    return jsonify({'prediction': prediction})
+
+@app.route('/analyze-csv', methods=['POST'])
+def analyze_csv():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if not file.filename.endswith('.csv'):
+        return jsonify({'error': 'Please upload a CSV file'}), 400
+    
+    try:
+        # Read the CSV file
+        df = pd.read_csv(file)
+        
+        # Assuming the review text is in a column named 'review'
+        # Modify this according to your CSV structure
+        reviews = df['review'].tolist()
+        
+        # Analyze each review
+        positive_count = 0
+        negative_count = 0
+        
+        for review in reviews:
+            prediction = predict_rating(str(review))
+            if prediction == "positive":
+                positive_count += 1
+            else:
+                negative_count += 1
+        
+        return jsonify({
+            'positive_count': positive_count,
+            'negative_count': negative_count,
+            'total_reviews': len(reviews)
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == "__main__":
     app.run(debug=True)
