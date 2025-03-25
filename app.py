@@ -4,6 +4,8 @@ import numpy as np
 import project1 as p1
 import pandas as pd
 import io
+import json
+import os
 
 app = Flask(__name__)
 
@@ -39,6 +41,19 @@ def home():
 def csv_analysis():
     return render_template('csv_analysis.html')
 
+@app.route('/accuracy-analysis')
+def accuracy_analysis():
+    return render_template('accuracy_analysis.html')
+
+@app.route('/get-accuracy-data')
+def get_accuracy_data():
+    try:
+        with open('static/accuracy_data.json', 'r') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
@@ -62,16 +77,15 @@ def analyze_csv():
         # Read the CSV file
         df = pd.read_csv(file)
         
-        # Assuming the review text is in a column named 'review'
-        # Modify this according to your CSV structure
-        reviews = df['review'].tolist()
+        # Get first 100 reviews
+        reviews = df['review'].head(100).tolist()
         
         # Analyze each review
         positive_count = 0
         negative_count = 0
         
         for review in reviews:
-            prediction = predict_rating(str(review))
+            prediction = predict_rating(review)
             if prediction == "positive":
                 positive_count += 1
             else:
@@ -80,11 +94,13 @@ def analyze_csv():
         return jsonify({
             'positive_count': positive_count,
             'negative_count': negative_count,
-            'total_reviews': len(reviews)
+            'total_reviews': len(reviews),
+            'total_available': len(df['review'])
         })
     
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Set host to '0.0.0.0' to make it accessible from other machines
+    app.run(host='0.0.0.0', port=5001, debug=True)

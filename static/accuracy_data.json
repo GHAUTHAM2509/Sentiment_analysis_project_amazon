@@ -1,0 +1,36 @@
+{
+    "datasets": [
+        {
+            "title": "Gift Cards Reviews",
+            "correct_positive": 72141,
+            "correct_negative": 5631,
+            "incorrect_positive": 3271,
+            "incorrect_negative": 18957,
+            "total_reviews": 100000
+        },
+        {
+            "title": "All Beauty Reviews",
+            "correct_positive": 56341,
+            "correct_negative": 18587,
+            "incorrect_positive": 7683,
+            "incorrect_negative": 17389,
+            "total_reviews": 100000
+        },
+        {
+            "title": "Health and Personal Care Reviews",
+            "correct_positive": 56536,
+            "correct_negative": 17357,
+            "incorrect_positive": 7482,
+            "incorrect_negative": 18625,
+            "total_reviews": 100000
+        },
+        {
+            "title": "Electronics Reviews",
+            "correct_positive": 56704,
+            "correct_negative": 14316,
+            "incorrect_positive": 5122,
+            "incorrect_negative": 23858,
+            "total_reviews": 100000
+        }
+    ]
+} 

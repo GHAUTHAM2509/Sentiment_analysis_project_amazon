@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block additional_styles %}
+.container {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: #1a1a1a;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.dataset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.dataset-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dataset-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.chart-container {
+    width: 100%;
+    height: 300px;
+    margin-bottom: 1rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.correct-positive { color: #1e7e34; }
+.correct-negative { color: #1e7e34; }
+.incorrect-positive { color: #d93025; }
+.incorrect-negative { color: #d93025; }
+
+#loadingState {
+    display: none;
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#errorState {
+    display: none;
+    background-color: #fce8e6;
+    color: #d93025;
+    padding: 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    text-align: center;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Model Accuracy Analysis</h1>
+    
+    <div id="loadingState">
+        <div class="spinner"></div>
+        <p>Loading accuracy data...</p>
+    </div>
+    
+    <div id="errorState">An error occurred while loading the data. Please try again.</div>
+    
+    <div class="dataset-grid" id="datasetGrid">
+        <!-- Dataset cards will be dynamically inserted here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#loadingState').show();
+        $('#errorState').hide();
+        
+        function createPieChart(canvasId, data, title) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Correct Positive', 'Correct Negative', 'Incorrect Positive', 'Incorrect Negative'],
+                    datasets: [{
+                        data: [
+                            data.correct_positive,
+                            data.correct_negative,
+                            data.incorrect_positive,
+                            data.incorrect_negative
+                        ],
+                        backgroundColor: [
+                            '#1e7e34',  // Correct Positive
+                            '#1e7e34',  // Correct Negative
+                            '#d93025',  // Incorrect Positive
+                            '#d93025'   // Incorrect Negative
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: title
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createDatasetCard(dataset) {
+            const cardId = `card-${dataset.title.replace(/\s+/g, '-').toLowerCase()}`;
+            const chartId = `chart-${dataset.title.replace(/\s+/g, '-').toLowerCase()}`;
+            
+            const accuracy = ((dataset.correct_positive + dataset.correct_negative) / dataset.total_reviews * 100).toFixed(2);
+            
+            return `
+                <div class="dataset-card" id="${cardId}">
+                    <div class="dataset-title">${dataset.title}</div>
+                    <div class="chart-container">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value correct-positive">${dataset.correct_positive}</div>
+                            <div class="stat-label">Correct Positive</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value correct-negative">${dataset.correct_negative}</div>
+                            <div class="stat-label">Correct Negative</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value incorrect-positive">${dataset.incorrect_positive}</div>
+                            <div class="stat-label">Incorrect Positive</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value incorrect-negative">${dataset.incorrect_negative}</div>
+                            <div class="stat-label">Incorrect Negative</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 1rem; font-weight: 500;">
+                        Overall Accuracy: ${accuracy}%
+                    </div>
+                </div>
+            `;
+        }
+        
+        $.ajax({
+            url: '/get-accuracy-data',
+            type: 'GET',
+            success: function(response) {
+                const datasetGrid = $('#datasetGrid');
+                response.datasets.forEach(dataset => {
+                    datasetGrid.append(createDatasetCard(dataset));
+                    createPieChart(
+                        `chart-${dataset.title.replace(/\s+/g, '-').toLowerCase()}`,
+                        dataset,
+                        `${dataset.title} (${dataset.total_reviews} reviews)`
+                    );
+                });
+                $('#loadingState').hide();
+            },
+            error: function() {
+                $('#loadingState').hide();
+                $('#errorState').show();
+            }
+        });
+    });
+</script>
+{% endblock %} 
